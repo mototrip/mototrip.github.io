@@ -1,0 +1,56 @@
+name: Verify MotoTrip TWA Root Domain
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.well-known/assetlinks.json'
+      - 'index.html'
+      - '.nojekyll'
+      - '.github/workflows/verify-twa-root.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Verify root Digital Asset Links HTTPS response
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://mototrip.github.io/.well-known/assetlinks.json"
+          for attempt in $(seq 1 18); do
+            status=$(curl -LsS --max-time 15 -o /tmp/assetlinks.json -w '%{http_code}' "$url" || true)
+            echo "TWA_HTTPS_ATTEMPT=$attempt STATUS=$status"
+            if [[ "$status" == "200" ]]; then break; fi
+            sleep 10
+          done
+          test "$status" = "200" || { echo "::error::Root assetlinks URL is not returning HTTP 200"; exit 1; }
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/assetlinks.json',encoding='utf-8'))
+          expected='7D:32:2C:77:EB:72:D0:E4:5A:4A:A8:2A:D5:FC:0A:B5:DA:5D:0A:16:B9:61:05:CC:8B:74:B7:31:9A:56:64:FE'
+          assert isinstance(d,list) and any(
+            'delegate_permission/common.handle_all_urls' in x.get('relation',[])
+            and x.get('target',{}).get('namespace')=='android_app'
+            and x.get('target',{}).get('package_name')=='com.mototrip.app.twa'
+            and expected in x.get('target',{}).get('sha256_cert_fingerprints',[])
+            for x in d
+          ), 'Incorrect public MotoTrip package or signing fingerprint in root DAL'
+          print('ROOT_DIGITAL_ASSET_LINKS=PASS')
+          print('PACKAGE=com.mototrip.app.twa')
+          print('CERTIFICATE_TYPE=UPLOAD_SIGNING_KEY_SIDeload')
+          print('NOTE=Play App Signing SHA256 must be added for Play-installed app')
+          PY
+
+      - name: Verify root home page redirects to app
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 5 --retry-delay 5 --max-time 30 https://mototrip.github.io/ > /tmp/mototrip-root.html
+          grep -Fq '/Trip-Planner/' /tmp/mototrip-root.html
+          echo 'ROOT_SITE=PASS'
