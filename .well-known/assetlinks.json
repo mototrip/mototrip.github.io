@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "com.mototrip.app.twa",
       "sha256_cert_fingerprints": [
-        "7D:32:2C:77:EB:72:D0:E4:5A:4A:A8:2A:D5:FC:0A:B5:DA:5D:0A:16:B9:61:05:CC:8B:74:B7:31:9A:56:64:FE"
+        "7D:32:2C:77:EB:72:D0:E4:5A:4A:A8:2A:D5:FC:0A:B5:DA:5D:0A:16:B9:61:05:CC:8B:74:B7:31:9A:56:64:FE",
+        "7C:DB:B1:34:CA:F6:97:C8:42:D7:4E:10:96:13:FE:DA:E9:7C:D9:11:2A:EC:6E:69:E1:45:9D:F9:04:10:79:10"
       ]
     }
   }
